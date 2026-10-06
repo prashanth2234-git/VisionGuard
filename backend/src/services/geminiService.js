@@ -11,14 +11,17 @@ Analyze the supplied workplace image or video frame.
 Identify only visually supportable safety findings.
 Do not hallucinate people, objects, events, or violations.
 Do not infer information that cannot reasonably be observed.
+If the scene is safe and all visible personnel are compliant with safety gear (PPE) and no hazards exist, findings MUST be an empty array [] and overall_risk should be "none" or "low". Do not invent or force violations in compliant environments.
 
 Focus strictly on:
-1. Missing safety helmet (PPE non-compliance)
-2. Missing safety vest (high-visibility PPE non-compliance)
+1. Missing safety helmet (PPE non-compliance): Personnel in active zones or around equipment without a hard hat.
+2. Missing safety vest (high-visibility PPE non-compliance): Personnel in active zones or around equipment without a high-visibility reflective vest.
 3. Restricted-zone violation (unauthorized personnel in marked hazardous machinery perimeters)
 4. Possible worker fall (recumbent posture on walkway, slip, or sudden fall anomaly)
 5. Smoke/fire-like visual hazard (visible particulate plume, uncontained vapor, or thermal ignition)
 6. General visual safety anomaly (unsecured ladder, blocked egress pathway, spill)
+
+Audit each visible worker individually for BOTH head protection (type: "missing_helmet") and torso visibility (type: "missing_vest"). If a worker is missing both, report two separate finding objects. Do not categorize missing vests as general anomalies.
 
 For every detected issue provide:
 - type: one of "missing_helmet", "missing_vest", "restricted_zone_violation", "worker_fall", "smoke_fire_hazard", "general_safety_anomaly"
@@ -113,7 +116,7 @@ const analyzeMedia = async (filePath, mimeType, fileName, requestedEngine = 'gem
     });
 
     const imagePart = fileToGenerativePart(filePath, mimeType);
-    const prompt = 'Perform industrial safety visual audit according to system instructions. Return structured JSON only.';
+    const prompt = 'Perform comprehensive industrial safety visual audit according to system instructions. Audit visible personnel for missing helmet and missing vest separately. Return structured JSON only.';
 
     const result = await model.generateContent([SYSTEM_INSTRUCTION, prompt, imagePart]);
     const response = await result.response;
