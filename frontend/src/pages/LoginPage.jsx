@@ -113,7 +113,7 @@ export default function LoginPage() {
           className="w-full py-1.5 px-3 bg-slate-900 hover:bg-slate-850 border border-slate-700 rounded text-[11px] font-mono text-slate-300 flex items-center justify-center gap-1.5 transition-colors"
         >
           <ShieldCheck className="w-3.5 h-3.5 text-orange-400" />
-          <span>Pre-fill Evaluator Demo Account</span>
+          <span>DEMO ACCESS: Pre-fill Evaluator Account</span>
         </button>
       </div>
 

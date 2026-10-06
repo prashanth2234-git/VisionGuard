@@ -209,9 +209,9 @@ export default function AnalyzePage() {
           <div className="space-y-1">
             <p className="font-semibold">Inspection Failed</p>
             <p>{error}</p>
-            {error.includes('GEMINI_API_KEY') || error.includes('Gemini Vision requires') ? (
+            {error.includes('GEMINI') || error.includes('Gemini Vision requires') ? (
               <p className="text-[11px] text-red-700 pt-1">
-                Note: To test without external API credentials, toggle the engine selector to <strong>Demo Baseline</strong> above or configure your GEMINI_API_KEY in backend/.env.
+                Note: To test without external API credentials, toggle the engine selector to <strong>Demo Baseline</strong> above or configure your Gemini Vision API credentials in the backend environment.
               </p>
             ) : null}
           </div>

@@ -189,6 +189,52 @@ async function runFullQA() {
     results['Incident Dossier Retrieval & CV Evidence Verification'] = { status: 'FAIL', detail: err.message };
   }
 
+  // Section 6: Test GET /api/analyses and GET /api/incidents
+  try {
+    const listAnalysesRes = await fetch(`${baseUrl}/api/analyses`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const listAnalysesData = await listAnalysesRes.json();
+
+    const listIncidentsRes = await fetch(`${baseUrl}/api/incidents`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const listIncidentsData = await listIncidentsRes.json();
+
+    if (listAnalysesRes.ok && listIncidentsRes.ok && Array.isArray(listAnalysesData.data?.analyses) && Array.isArray(listIncidentsData.data?.incidents)) {
+      results['Section 6: GET /api/analyses & GET /api/incidents Queries'] = {
+        status: 'PASS',
+        detail: `Successfully listed ${listAnalysesData.data.analyses.length} analyses and ${listIncidentsData.data.incidents.length} incidents`,
+      };
+    } else {
+      results['Section 6: GET /api/analyses & GET /api/incidents Queries'] = {
+        status: 'FAIL',
+        detail: 'Failed to query analysis or incident list',
+      };
+    }
+  } catch (err) {
+    results['Section 6: GET /api/analyses & GET /api/incidents Queries'] = { status: 'FAIL', detail: err.message };
+  }
+
+  // Section 6: Authentication Route Protection Guard
+  try {
+    const unauthRes = await fetch(`${baseUrl}/api/analyses`);
+    const unauthData = await unauthRes.json();
+    if (unauthRes.status === 401 && unauthData.error?.code === 'UNAUTHORIZED') {
+      results['Section 6: Authentication Route Protection Guard'] = {
+        status: 'PASS',
+        detail: 'Unauthenticated requests to protected endpoints return 401 UNAUTHORIZED',
+      };
+    } else {
+      results['Section 6: Authentication Route Protection Guard'] = {
+        status: 'FAIL',
+        detail: `Expected 401 UNAUTHORIZED, received ${unauthRes.status}`,
+      };
+    }
+  } catch (err) {
+    results['Section 6: Authentication Route Protection Guard'] = { status: 'FAIL', detail: err.message };
+  }
+
   // 8. Incident Status Transition: Open -> Acknowledged -> Resolved
   try {
     if (!createdIncidentId) throw new Error('No incident ID available');

@@ -28,6 +28,10 @@ app.use(cors({
     if (config.nodeEnv !== 'production' || origin.includes('.vercel.app')) {
       return callback(null, true);
     }
+    // In production, reject all unauthorized origins
+    if (config.nodeEnv === 'production') {
+      return callback(new Error('CORS policy: Access denied for this origin.'));
+    }
     return callback(null, true);
   },
   credentials: true,
