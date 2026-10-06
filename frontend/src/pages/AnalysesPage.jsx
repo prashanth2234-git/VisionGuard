@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../services/api';
 import { SeverityBadge } from '../components/StatusBadge';
 import EmptyState from '../components/EmptyState';
-import { History, ArrowRight, RefreshCw, FileText, ScanEye } from 'lucide-react';
+import { History, ArrowRight, RefreshCw, ScanEye } from 'lucide-react';
 
 export default function AnalysesPage() {
   const [analyses, setAnalyses] = useState([]);
@@ -28,7 +28,7 @@ export default function AnalysesPage() {
   }, []);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
@@ -78,7 +78,7 @@ export default function AnalysesPage() {
                 <tr>
                   <th scope="col" className="px-4 py-3">Audit ID</th>
                   <th scope="col" className="px-4 py-3">File Name</th>
-                  <th scope="col" className="px-4 py-3">Format</th>
+                  <th scope="col" className="px-4 py-3">Engine</th>
                   <th scope="col" className="px-4 py-3">Risk Assessment</th>
                   <th scope="col" className="px-4 py-3">Persons</th>
                   <th scope="col" className="px-4 py-3">Incidents Created</th>
@@ -89,14 +89,20 @@ export default function AnalysesPage() {
               <tbody className="divide-y divide-slate-100 text-slate-800">
                 {analyses.map((a) => (
                   <tr key={a.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="px-4 py-3 font-mono text-[11px] text-slate-500">
-                      #{a.id.substring(0, 8)}
+                    <td className="px-4 py-3 font-mono font-bold text-slate-900 text-[11px]">
+                      {a.display_id || a.id.substring(0, 8)}
                     </td>
                     <td className="px-4 py-3 font-medium text-slate-900 max-w-xs truncate">
                       {a.file_name}
                     </td>
-                    <td className="px-4 py-3 font-mono uppercase text-[10px] text-slate-600">
-                      {a.media_type}
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <span className={`px-2 py-0.5 rounded text-[11px] font-mono font-semibold ${
+                        a.analysis_engine === 'Gemini Vision'
+                          ? 'bg-orange-50 text-orange-800 border border-orange-200'
+                          : 'bg-slate-100 text-slate-700 border border-slate-200'
+                      }`}>
+                        {a.analysis_engine || 'Gemini Vision'}
+                      </span>
                     </td>
                     <td className="px-4 py-3">
                       <SeverityBadge severity={a.overall_risk} />

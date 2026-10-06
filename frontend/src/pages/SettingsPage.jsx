@@ -72,7 +72,7 @@ export default function SettingsPage() {
               {healthData?.database_type ? `${healthData.database_type.toUpperCase()} Storage Engine` : 'PostgreSQL / Supabase Ready'}
             </span>
             <p className="text-[11px] text-slate-500 mt-1">
-              Supports Supabase PostgreSQL connection string via DATABASE_URL with resilient automatic local fallback.
+              Production requires Supabase PostgreSQL via DATABASE_URL. Development mode allows local SQLite evaluation.
             </p>
           </div>
 

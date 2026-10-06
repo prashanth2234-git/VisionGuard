@@ -5,7 +5,7 @@ const geminiService = require('./geminiService');
 const logger = require('../utils/logger');
 const { AppError } = require('../utils/errors');
 
-const createAnalysis = async ({ file, userId }) => {
+const createAnalysis = async ({ file, userId, engine = 'gemini' }) => {
   if (!file) {
     throw new AppError('No media file uploaded for analysis.', 400, 'NO_FILE_UPLOADED');
   }
@@ -14,24 +14,42 @@ const createAnalysis = async ({ file, userId }) => {
   const mediaType = file.mimetype.startsWith('video/') ? 'video' : 'image';
   const relativeFilePath = `/uploads/${path.basename(file.path)}`;
 
+  // Deterministic Analysis Display ID: ANL-2026-00001
+  const countRes = await db.query('SELECT COUNT(*) AS total FROM analyses');
+  const totalAnalyses = parseInt(countRes.rows[0]?.total || '0', 10);
+  const displayId = `ANL-2026-${String(totalAnalyses + 1).padStart(5, '0')}`;
+
   logger.info(`Starting visual safety analysis for ${file.originalname}`, {
     analysisId,
+    displayId,
+    engine,
     mediaType,
     size: file.size,
     mimeType: file.mimetype,
   });
 
-  // Call Gemini Vision AI Service
-  const aiResult = await geminiService.analyzeMedia(file.path, file.mimetype, file.originalname);
+  // Call Vision AI Service
+  const aiResult = await geminiService.analyzeMedia(
+    file.path,
+    file.mimetype,
+    file.originalname,
+    engine
+  );
+
+  const engineName = aiResult.analysis_engine || (engine === 'demo_baseline' ? 'Demo Baseline' : 'Gemini Vision');
+  const whyFlaggedStr = JSON.stringify(aiResult.why_flagged || []);
+  const riskAssessment = aiResult.risk_assessment || 'Visual findings recorded by optical intelligence.';
 
   // Store in analyses table
   await db.query(
     `INSERT INTO analyses (
-      id, user_id, media_type, file_name, file_path, file_size, mime_type,
-      scene_summary, persons_detected, overall_risk, raw_ai_response
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+      id, display_id, user_id, media_type, file_name, file_path, file_size, mime_type,
+      scene_summary, persons_detected, overall_risk, analysis_engine,
+      why_flagged, risk_assessment, raw_ai_response
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
     [
       analysisId,
+      displayId,
       userId || null,
       mediaType,
       file.originalname,
@@ -41,32 +59,44 @@ const createAnalysis = async ({ file, userId }) => {
       aiResult.scene_summary,
       aiResult.persons_detected || 0,
       aiResult.overall_risk || 'low',
+      engineName,
+      whyFlaggedStr,
+      riskAssessment,
       JSON.stringify(aiResult),
     ]
   );
 
-  // Create linked Incidents
-  const createdIncidents = [];
-  const incidentsToProcess = aiResult.incidents && aiResult.incidents.length > 0
-    ? aiResult.incidents
-    : (aiResult.violations || []);
+  // Count incidents for deterministic sequential incident display IDs: INC-2026-00001
+  const incidentCountRes = await db.query('SELECT COUNT(*) AS total FROM incidents');
+  let currentIncidentSeq = parseInt(incidentCountRes.rows[0]?.total || '0', 10);
 
-  for (const item of incidentsToProcess) {
+  // Create linked Incidents with full visual evidence
+  const createdIncidents = [];
+  const findingsToProcess = Array.isArray(aiResult.findings) && aiResult.findings.length > 0
+    ? aiResult.findings
+    : (Array.isArray(aiResult.violations) ? aiResult.violations : []);
+
+  for (const item of findingsToProcess) {
+    currentIncidentSeq += 1;
     const incidentId = uuidv4();
+    const incidentDisplayId = `INC-2026-${String(currentIncidentSeq).padStart(5, '0')}`;
     const confidence = typeof item.confidence === 'number' ? Math.min(Math.max(item.confidence, 0), 1) : 0.85;
 
     await db.query(
       `INSERT INTO incidents (
-        id, analysis_id, type, severity, confidence, description,
-        location, recommended_action, status
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'open')`,
+        id, display_id, analysis_id, type, severity, confidence, description,
+        visual_evidence, explanation, location, recommended_action, status
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'open')`,
       [
         incidentId,
+        incidentDisplayId,
         analysisId,
         item.type || 'general_safety_anomaly',
         item.severity || 'medium',
         confidence,
-        item.description || 'Visual safety anomaly detected',
+        item.description || item.visual_evidence || 'Visual safety anomaly detected',
+        item.visual_evidence || item.description || 'Observed in active sector',
+        item.explanation || 'Protocol non-compliance in monitored workspace',
         item.location || 'Observed sector',
         item.recommended_action || 'Inspect sector and verify safety protocol',
       ]
@@ -74,11 +104,14 @@ const createAnalysis = async ({ file, userId }) => {
 
     createdIncidents.push({
       id: incidentId,
+      display_id: incidentDisplayId,
       analysis_id: analysisId,
       type: item.type || 'general_safety_anomaly',
       severity: item.severity || 'medium',
       confidence,
-      description: item.description,
+      description: item.description || item.visual_evidence,
+      visual_evidence: item.visual_evidence || item.description,
+      explanation: item.explanation || 'Protocol non-compliance in monitored workspace',
       location: item.location,
       recommended_action: item.recommended_action,
       status: 'open',
@@ -113,7 +146,6 @@ const createAnalysis = async ({ file, userId }) => {
       });
     }
   } else {
-    // If no specific timeline events, generate initial audit log event
     const eventId = uuidv4();
     await db.query(
       `INSERT INTO analysis_events (
@@ -140,13 +172,18 @@ const createAnalysis = async ({ file, userId }) => {
 
   return {
     id: analysisId,
+    display_id: displayId,
     file_name: file.originalname,
     file_path: relativeFilePath,
     media_type: mediaType,
     scene_summary: aiResult.scene_summary,
-    persons_detected: aiResult.persons_detected,
-    overall_risk: aiResult.overall_risk,
+    persons_detected: aiResult.persons_detected || 0,
+    overall_risk: aiResult.overall_risk || 'low',
+    analysis_engine: engineName,
+    why_flagged: aiResult.why_flagged || [],
+    risk_assessment: riskAssessment,
     recommended_actions: aiResult.recommended_actions || [],
+    findings: createdIncidents,
     incidents: createdIncidents,
     timeline_events: timelineEvents,
     created_at: new Date().toISOString(),
@@ -155,8 +192,8 @@ const createAnalysis = async ({ file, userId }) => {
 
 const getAnalyses = async ({ limit = 20, offset = 0 }) => {
   const result = await db.query(
-    `SELECT a.id, a.user_id, a.media_type, a.file_name, a.file_path, a.file_size,
-            a.scene_summary, a.persons_detected, a.overall_risk, a.created_at,
+    `SELECT a.id, a.display_id, a.user_id, a.media_type, a.file_name, a.file_path, a.file_size,
+            a.scene_summary, a.persons_detected, a.overall_risk, a.analysis_engine, a.created_at,
             COUNT(i.id) AS incident_count
      FROM analyses a
      LEFT JOIN incidents i ON a.id = i.analysis_id
@@ -179,9 +216,10 @@ const getAnalyses = async ({ limit = 20, offset = 0 }) => {
 
 const getAnalysisById = async (id) => {
   const analysisResult = await db.query(
-    `SELECT id, user_id, media_type, file_name, file_path, file_size, mime_type,
-            scene_summary, persons_detected, overall_risk, raw_ai_response, created_at
-     FROM analyses WHERE id = $1`,
+    `SELECT id, display_id, user_id, media_type, file_name, file_path, file_size, mime_type,
+            scene_summary, persons_detected, overall_risk, analysis_engine,
+            why_flagged, risk_assessment, raw_ai_response, created_at
+     FROM analyses WHERE id = $1 OR display_id = $1`,
     [id]
   );
 
@@ -192,12 +230,13 @@ const getAnalysisById = async (id) => {
   const analysis = analysisResult.rows[0];
 
   const incidentsResult = await db.query(
-    `SELECT id, type, severity, confidence, description, location,
+    `SELECT id, display_id, type, severity, confidence, description,
+            visual_evidence, explanation, location,
             recommended_action, status, created_at, resolved_at, resolution_notes
      FROM incidents
      WHERE analysis_id = $1
      ORDER BY created_at ASC`,
-    [id]
+    [analysis.id]
   );
 
   const eventsResult = await db.query(
@@ -205,8 +244,15 @@ const getAnalysisById = async (id) => {
      FROM analysis_events
      WHERE analysis_id = $1
      ORDER BY created_at ASC`,
-    [id]
+    [analysis.id]
   );
+
+  let parsedWhyFlagged = [];
+  try {
+    parsedWhyFlagged = JSON.parse(analysis.why_flagged || '[]');
+  } catch {
+    parsedWhyFlagged = [];
+  }
 
   let rawData = {};
   try {
@@ -217,7 +263,10 @@ const getAnalysisById = async (id) => {
 
   return {
     ...analysis,
+    why_flagged: parsedWhyFlagged.length > 0 ? parsedWhyFlagged : (rawData.why_flagged || []),
+    risk_assessment: analysis.risk_assessment || rawData.risk_assessment || 'Visual findings logged by optical model.',
     recommended_actions: rawData.recommended_actions || [],
+    findings: incidentsResult.rows,
     incidents: incidentsResult.rows,
     timeline_events: eventsResult.rows,
   };

@@ -25,7 +25,7 @@ export default function ReportsPage() {
           if (list.length > 0) {
             const targetId = initialIncidentId || list[0].id;
             setSelectedIncidentId(targetId);
-            const found = list.find((i) => i.id === targetId) || list[0];
+            const found = list.find((i) => i.id === targetId || i.display_id === targetId) || list[0];
             setActiveIncident(found);
           }
         }
@@ -38,7 +38,7 @@ export default function ReportsPage() {
     loadData();
   }, [initialIncidentId]);
 
-  const handleSelectChange = async (e) => {
+  const handleSelectChange = (e) => {
     const id = e.target.value;
     setSelectedIncidentId(id);
     const found = incidents.find((i) => i.id === id);
@@ -57,10 +57,10 @@ export default function ReportsPage() {
       <div className="print:hidden flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-slate-900">
-            Safety Compliance Report Generator
+            AI-assisted Safety Audit Reports
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Formal industrial safety audit documentation for OSHA verification and operations management.
+            Formal industrial safety audit documentation for operations management and safety supervisor review.
           </p>
         </div>
 
@@ -73,7 +73,7 @@ export default function ReportsPage() {
             >
               {incidents.map((inc) => (
                 <option key={inc.id} value={inc.id}>
-                  #{inc.id.substring(0, 8)}: {inc.type.replace(/_/g, ' ')} ({inc.severity})
+                  {inc.display_id || inc.id.substring(0, 8)}: {inc.type.replace(/_/g, ' ')} ({inc.severity})
                 </option>
               ))}
             </select>
@@ -93,7 +93,7 @@ export default function ReportsPage() {
       {/* Printable Report Document Sheet */}
       {loading ? (
         <div className="py-20 text-center font-mono text-xs text-slate-500">
-          Compiling compliance document...
+          Compiling audit report document...
         </div>
       ) : !activeIncident ? (
         <div className="p-8 text-center text-slate-500 text-xs border border-dashed border-slate-300 rounded bg-white">
@@ -101,13 +101,13 @@ export default function ReportsPage() {
         </div>
       ) : (
         <div className="bg-white border border-slate-300 shadow-sm rounded-sm p-8 sm:p-12 text-slate-900 print:border-none print:shadow-none print:p-0">
-          {/* Official Document Header */}
+          {/* Document Header */}
           <div className="border-b-2 border-slate-900 pb-4 mb-6 flex items-start justify-between">
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-extrabold text-base tracking-tight text-slate-900">VISIONGUARD AI</span>
                 <span className="px-1.5 py-0.5 bg-orange-600 text-white font-mono text-[9px] uppercase font-bold">
-                  INCIDENT INTELLIGENCE
+                  SAFETY INTELLIGENCE
                 </span>
               </div>
               <p className="text-[11px] text-slate-500 font-mono mt-0.5">
@@ -115,7 +115,7 @@ export default function ReportsPage() {
               </p>
             </div>
             <div className="text-right font-mono text-[11px] text-slate-600">
-              <div>REPORT ID: VG-AUDIT-{activeIncident.id.substring(0, 8).toUpperCase()}</div>
+              <div>REPORT ID: {activeIncident.display_id || `INC-${activeIncident.id.substring(0, 8)}`}</div>
               <div>DATE: {new Date(activeIncident.created_at).toLocaleDateString()}</div>
               <div>STATUS: {activeIncident.status.toUpperCase()}</div>
             </div>
@@ -124,7 +124,7 @@ export default function ReportsPage() {
           {/* Document Title */}
           <div className="mb-6">
             <h2 className="text-lg font-bold uppercase tracking-tight text-slate-900">
-              Workplace Safety Incident Audit Dossier
+              AI-assisted Workplace Safety Audit Dossier
             </h2>
             <p className="text-xs text-slate-600 mt-1">
               Generated following autonomous computer vision scan of industrial sector imagery.
@@ -168,10 +168,18 @@ export default function ReportsPage() {
               </tr>
               <tr className="border-b border-slate-200">
                 <td className="bg-slate-50 p-2.5 font-semibold text-slate-700 border-r border-slate-200">
+                  Analysis Engine
+                </td>
+                <td className="p-2.5 font-mono text-[11px]">
+                  {activeIncident.analysis_engine || 'Gemini Vision'}
+                </td>
+              </tr>
+              <tr className="border-b border-slate-200">
+                <td className="bg-slate-50 p-2.5 font-semibold text-slate-700 border-r border-slate-200">
                   Associated Analysis Batch
                 </td>
                 <td className="p-2.5 font-mono text-[11px]">
-                  #{activeIncident.analysis_id} ({activeIncident.file_name})
+                  {activeIncident.analysis_display_id || activeIncident.analysis_id} ({activeIncident.file_name})
                 </td>
               </tr>
               <tr>
@@ -189,10 +197,10 @@ export default function ReportsPage() {
           <div className="space-y-4 mb-6">
             <div>
               <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1 border-b border-slate-200 pb-1">
-                Visual Finding Narrative
+                Visual Finding &amp; Evidence
               </h3>
               <p className="text-xs text-slate-800 leading-relaxed font-sans bg-slate-50 p-3 border border-slate-200 rounded-xs">
-                {activeIncident.description}
+                {activeIncident.visual_evidence || activeIncident.description}
               </p>
             </div>
 
@@ -219,7 +227,7 @@ export default function ReportsPage() {
 
           {/* Regulatory Advisory Footnote */}
           <div className="p-3 bg-slate-100 border border-slate-200 rounded-xs text-[10px] text-slate-600 mb-8 leading-relaxed">
-            <strong>ADVISORY DISCLAIMER:</strong> AI-generated safety findings are decision-support recommendations and should be verified by qualified personnel. VisionGuard AI provides optical intelligence assistance and does not replace statutory OSHA inspections or designated safety supervisor audits.
+            <strong>ADVISORY DISCLAIMER:</strong> AI-generated safety findings are decision-support recommendations and should be verified by qualified personnel. VisionGuard AI provides optical intelligence assistance and does not replace statutory safety inspections or designated safety supervisor audits.
           </div>
 
           {/* Formal Sign-off Section */}

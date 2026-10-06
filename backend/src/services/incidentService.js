@@ -4,9 +4,10 @@ const logger = require('../utils/logger');
 
 const getIncidents = async ({ status, severity, type, limit = 50, offset = 0 } = {}) => {
   let queryText = `
-    SELECT i.id, i.analysis_id, i.type, i.severity, i.confidence, i.description,
-           i.location, i.recommended_action, i.status, i.created_at, i.resolved_at,
-           i.resolution_notes,
+    SELECT i.id, i.display_id, i.analysis_id, i.type, i.severity, i.confidence, i.description,
+           i.visual_evidence, i.explanation, i.location, i.recommended_action, i.status,
+           i.created_at, i.resolved_at, i.resolution_notes,
+           a.display_id AS analysis_display_id, a.analysis_engine,
            a.file_name, a.file_path, a.media_type, a.scene_summary
     FROM incidents i
     JOIN analyses a ON i.analysis_id = a.id
@@ -34,7 +35,6 @@ const getIncidents = async ({ status, severity, type, limit = 50, offset = 0 } =
 
   const result = await db.query(queryText, params);
 
-  // Total count for current filter
   let countQuery = 'SELECT COUNT(*) AS total FROM incidents i WHERE 1=1';
   const countParams = [];
   if (status) {
@@ -62,14 +62,16 @@ const getIncidents = async ({ status, severity, type, limit = 50, offset = 0 } =
 
 const getIncidentById = async (id) => {
   const result = await db.query(
-    `SELECT i.id, i.analysis_id, i.type, i.severity, i.confidence, i.description,
-            i.location, i.recommended_action, i.status, i.created_at, i.resolved_at,
-            i.resolution_notes,
+    `SELECT i.id, i.display_id, i.analysis_id, i.type, i.severity, i.confidence, i.description,
+            i.visual_evidence, i.explanation, i.location, i.recommended_action, i.status,
+            i.created_at, i.resolved_at, i.resolution_notes,
+            a.display_id AS analysis_display_id, a.analysis_engine,
             a.file_name, a.file_path, a.media_type, a.scene_summary, a.overall_risk,
+            a.why_flagged, a.risk_assessment,
             a.created_at AS analysis_created_at
      FROM incidents i
      JOIN analyses a ON i.analysis_id = a.id
-     WHERE i.id = $1`,
+     WHERE i.id = $1 OR i.display_id = $1`,
     [id]
   );
 
@@ -79,7 +81,6 @@ const getIncidentById = async (id) => {
 
   const incident = result.rows[0];
 
-  // Also fetch timeline events for this analysis
   const eventsResult = await db.query(
     `SELECT id, event_time, event_type, description, severity, created_at
      FROM analysis_events
@@ -88,18 +89,27 @@ const getIncidentById = async (id) => {
     [incident.analysis_id]
   );
 
+  let parsedWhyFlagged = [];
+  try {
+    parsedWhyFlagged = JSON.parse(incident.why_flagged || '[]');
+  } catch {
+    parsedWhyFlagged = [];
+  }
+
   return {
     ...incident,
+    why_flagged: parsedWhyFlagged,
     timeline_events: eventsResult.rows,
   };
 };
 
 const updateIncidentStatus = async (id, { status, resolution_notes }) => {
-  const existing = await db.query('SELECT id, status FROM incidents WHERE id = $1', [id]);
+  const existing = await db.query('SELECT id, status FROM incidents WHERE id = $1 OR display_id = $1', [id]);
   if (existing.rows.length === 0) {
     throw new AppError('Incident not found.', 404, 'INCIDENT_NOT_FOUND');
   }
 
+  const actualId = existing.rows[0].id;
   const isResolving = status === 'resolved';
   const resolvedAt = isResolving ? new Date().toISOString() : null;
 
@@ -109,12 +119,12 @@ const updateIncidentStatus = async (id, { status, resolution_notes }) => {
          resolved_at = $2,
          resolution_notes = COALESCE($3, resolution_notes)
      WHERE id = $4`,
-    [status, resolvedAt, resolution_notes || null, id]
+    [status, resolvedAt, resolution_notes || null, actualId]
   );
 
-  logger.info(`Updated incident ${id} status to ${status}`);
+  logger.info(`Updated incident ${actualId} status to ${status}`);
 
-  return getIncidentById(id);
+  return getIncidentById(actualId);
 };
 
 module.exports = {

@@ -5,14 +5,12 @@ import MetricCard from '../components/MetricCard';
 import { SeverityBadge, StatusBadge } from '../components/StatusBadge';
 import EmptyState from '../components/EmptyState';
 import {
-  FileSpreadsheet,
   AlertTriangle,
   AlertOctagon,
   CheckCircle2,
   ScanEye,
   ArrowRight,
   RefreshCw,
-  Clock,
   Layers,
 } from 'lucide-react';
 
@@ -30,7 +28,7 @@ export default function DashboardPage() {
         setStats(res.data);
       }
     } catch (err) {
-      setError(err.message || 'Unable to retrieve operations telemetry.');
+      setError(err.message || 'Unable to retrieve dashboard metrics.');
     } finally {
       setLoading(false);
     }
@@ -52,7 +50,7 @@ export default function DashboardPage() {
   if (error) {
     return (
       <div className="p-4 bg-red-50 border border-red-200 rounded text-red-800 text-xs">
-        <p className="font-semibold">Telemetry query error</p>
+        <p className="font-semibold">Database Query Error</p>
         <p className="mt-1">{error}</p>
         <button
           onClick={fetchStats}
@@ -77,15 +75,15 @@ export default function DashboardPage() {
     : (risk_distribution.critical + risk_distribution.high + risk_distribution.medium + risk_distribution.low);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto">
       {/* Top Operational Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-slate-900">
-            Safety Operations Center
+            Database-driven Safety Dashboard
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Real-time visual surveillance metrics and incident telemetry.
+            Operational visual surveillance metrics and incident intelligence from persistent database records.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -154,7 +152,7 @@ export default function DashboardPage() {
 
           {totalIncidents === 0 ? (
             <p className="text-xs text-slate-500 py-6 text-center">
-              No analysis data yet. Upload workplace media to generate risk telemetry.
+              No analysis data yet. Upload workplace media to generate risk metrics.
             </p>
           ) : (
             <div className="space-y-3">
@@ -285,8 +283,8 @@ export default function DashboardPage() {
 
         {recent_incidents.length === 0 ? (
           <EmptyState
-            title="No incidents detected yet"
-            description="Run a visual inspection on workplace media to detect hazards, PPE violations, and falls."
+            title="No incidents recorded"
+            description="Incidents generated from completed visual analyses will appear here."
             actionLabel="Analyze First Media File"
             actionLink="/analyze"
           />
@@ -295,9 +293,10 @@ export default function DashboardPage() {
             <table className="min-w-full text-left text-xs divide-y divide-slate-200">
               <thead className="bg-slate-50 text-slate-600 font-semibold">
                 <tr>
+                  <th scope="col" className="px-4 py-2.5">Incident ID</th>
                   <th scope="col" className="px-4 py-2.5">Severity</th>
                   <th scope="col" className="px-4 py-2.5">Type</th>
-                  <th scope="col" className="px-4 py-2.5">Location</th>
+                  <th scope="col" className="px-4 py-2.5">Visual Evidence</th>
                   <th scope="col" className="px-4 py-2.5">Status</th>
                   <th scope="col" className="px-4 py-2.5">Confidence</th>
                   <th scope="col" className="px-4 py-2.5 text-right">Action</th>
@@ -306,14 +305,17 @@ export default function DashboardPage() {
               <tbody className="divide-y divide-slate-100 text-slate-800">
                 {recent_incidents.map((inc) => (
                   <tr key={inc.id} className="hover:bg-slate-50">
+                    <td className="px-4 py-2.5 whitespace-nowrap font-mono font-bold text-slate-900 text-[11px]">
+                      {inc.display_id || `INC-${inc.id.substring(0, 8)}`}
+                    </td>
                     <td className="px-4 py-2.5 whitespace-nowrap">
                       <SeverityBadge severity={inc.severity} />
                     </td>
-                    <td className="px-4 py-2.5 whitespace-nowrap font-medium capitalize">
+                    <td className="px-4 py-2.5 whitespace-nowrap font-medium capitalize font-mono">
                       {inc.type.replace(/_/g, ' ')}
                     </td>
-                    <td className="px-4 py-2.5 whitespace-nowrap text-slate-600">
-                      {inc.location || 'Observed sector'}
+                    <td className="px-4 py-2.5 text-slate-600 max-w-xs truncate">
+                      {inc.visual_evidence || inc.description}
                     </td>
                     <td className="px-4 py-2.5 whitespace-nowrap">
                       <StatusBadge status={inc.status} />
@@ -368,9 +370,10 @@ export default function DashboardPage() {
               <div key={a.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-xs text-slate-900">{a.file_name}</span>
+                    <span className="font-mono font-bold text-xs text-slate-900">{a.display_id || a.id.substring(0, 8)}</span>
+                    <span className="font-medium text-xs text-slate-800">{a.file_name}</span>
                     <span className="font-mono text-[10px] uppercase px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded">
-                      {a.media_type}
+                      {a.analysis_engine || a.media_type}
                     </span>
                   </div>
                   <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">

@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE TABLE IF NOT EXISTS analyses (
   id VARCHAR(64) PRIMARY KEY,
+  display_id VARCHAR(50) NOT NULL,
   user_id VARCHAR(64) REFERENCES users(id) ON DELETE SET NULL,
   media_type VARCHAR(50) NOT NULL,
   file_name VARCHAR(255) NOT NULL,
@@ -22,17 +23,23 @@ CREATE TABLE IF NOT EXISTS analyses (
   scene_summary TEXT,
   persons_detected INTEGER DEFAULT 0,
   overall_risk VARCHAR(50) NOT NULL,
+  analysis_engine VARCHAR(50) NOT NULL DEFAULT 'Gemini Vision',
+  why_flagged TEXT,
+  risk_assessment TEXT,
   raw_ai_response TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS incidents (
   id VARCHAR(64) PRIMARY KEY,
+  display_id VARCHAR(50) NOT NULL,
   analysis_id VARCHAR(64) NOT NULL REFERENCES analyses(id) ON DELETE CASCADE,
   type VARCHAR(100) NOT NULL,
   severity VARCHAR(50) NOT NULL,
   confidence NUMERIC(4, 2) NOT NULL,
   description TEXT NOT NULL,
+  visual_evidence TEXT,
+  explanation TEXT,
   location VARCHAR(255),
   recommended_action TEXT NOT NULL,
   status VARCHAR(50) NOT NULL DEFAULT 'open',
@@ -54,8 +61,10 @@ CREATE TABLE IF NOT EXISTS analysis_events (
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_analyses_created_at ON analyses(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_analyses_user_id ON analyses(user_id);
+CREATE INDEX IF NOT EXISTS idx_analyses_display_id ON analyses(display_id);
 CREATE INDEX IF NOT EXISTS idx_incidents_analysis_id ON incidents(analysis_id);
 CREATE INDEX IF NOT EXISTS idx_incidents_status ON incidents(status);
 CREATE INDEX IF NOT EXISTS idx_incidents_severity ON incidents(severity);
 CREATE INDEX IF NOT EXISTS idx_incidents_created_at ON incidents(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_incidents_display_id ON incidents(display_id);
 CREATE INDEX IF NOT EXISTS idx_events_analysis_id ON analysis_events(analysis_id);

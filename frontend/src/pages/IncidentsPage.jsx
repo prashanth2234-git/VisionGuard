@@ -5,13 +5,10 @@ import { SeverityBadge, StatusBadge } from '../components/StatusBadge';
 import EmptyState from '../components/EmptyState';
 import {
   AlertTriangle,
-  Filter,
   Search,
   ArrowRight,
   RefreshCw,
-  CheckCircle2,
-  Clock,
-  Layers,
+  ShieldCheck,
 } from 'lucide-react';
 
 export default function IncidentsPage() {
@@ -51,13 +48,15 @@ export default function IncidentsPage() {
     const term = searchTerm.toLowerCase();
     return (
       (inc.description && inc.description.toLowerCase().includes(term)) ||
+      (inc.visual_evidence && inc.visual_evidence.toLowerCase().includes(term)) ||
       (inc.location && inc.location.toLowerCase().includes(term)) ||
+      (inc.display_id && inc.display_id.toLowerCase().includes(term)) ||
       (inc.type && inc.type.toLowerCase().includes(term))
     );
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
@@ -88,7 +87,6 @@ export default function IncidentsPage() {
       {/* Filter Toolbar */}
       <div className="bg-white border border-slate-200 rounded p-3 flex flex-col md:flex-row gap-3 items-center justify-between">
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-          {/* Status Filter */}
           <div className="flex items-center gap-1.5 text-xs">
             <span className="text-slate-500 font-medium">Status:</span>
             <select
@@ -103,7 +101,6 @@ export default function IncidentsPage() {
             </select>
           </div>
 
-          {/* Severity Filter */}
           <div className="flex items-center gap-1.5 text-xs">
             <span className="text-slate-500 font-medium">Severity:</span>
             <select
@@ -120,12 +117,11 @@ export default function IncidentsPage() {
           </div>
         </div>
 
-        {/* Search Input */}
         <div className="relative w-full md:w-72">
           <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Search issue, location, type..."
+            placeholder="Search ID, finding, location, type..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-8 pr-3 py-1 bg-slate-50 border border-slate-300 rounded text-xs text-slate-900 placeholder-slate-400 focus:outline-hidden focus:border-orange-500"
@@ -142,8 +138,8 @@ export default function IncidentsPage() {
           </div>
         ) : filteredIncidents.length === 0 ? (
           <EmptyState
-            title="No incidents matching criteria"
-            description="Adjust your filters or initiate a workplace visual audit to log findings."
+            title="No incidents recorded"
+            description="Incidents generated from completed visual analyses will appear here."
             actionLabel="Analyze Media"
             actionLink="/analyze"
           />
@@ -155,7 +151,7 @@ export default function IncidentsPage() {
                   <th scope="col" className="px-4 py-3">Incident ID</th>
                   <th scope="col" className="px-4 py-3">Severity</th>
                   <th scope="col" className="px-4 py-3">Classification</th>
-                  <th scope="col" className="px-4 py-3">Location &amp; Finding</th>
+                  <th scope="col" className="px-4 py-3">Visual Evidence &amp; Finding</th>
                   <th scope="col" className="px-4 py-3">Confidence</th>
                   <th scope="col" className="px-4 py-3">Status</th>
                   <th scope="col" className="px-4 py-3">Logged</th>
@@ -165,8 +161,8 @@ export default function IncidentsPage() {
               <tbody className="divide-y divide-slate-100 text-slate-800">
                 {filteredIncidents.map((inc) => (
                   <tr key={inc.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="px-4 py-3 whitespace-nowrap font-mono text-[11px] text-slate-500">
-                      #{inc.id.substring(0, 8)}
+                    <td className="px-4 py-3 whitespace-nowrap font-mono text-[11px] font-bold text-slate-900">
+                      {inc.display_id || `INC-${inc.id.substring(0, 8)}`}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       <SeverityBadge severity={inc.severity} />
@@ -176,7 +172,7 @@ export default function IncidentsPage() {
                     </td>
                     <td className="px-4 py-3 max-w-md">
                       <div className="font-medium text-slate-900 truncate">
-                        {inc.description}
+                        {inc.visual_evidence || inc.description}
                       </div>
                       <div className="text-[11px] text-slate-500 mt-0.5">
                         Sector: {inc.location || 'Visual field sector'}

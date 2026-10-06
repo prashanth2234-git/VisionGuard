@@ -3,9 +3,11 @@ const { successResponse } = require('../utils/response');
 
 const createAnalysis = async (req, res, next) => {
   try {
+    const engine = req.body?.engine || req.query?.engine || 'gemini';
     const result = await analysisService.createAnalysis({
       file: req.file,
       userId: req.user ? req.user.id : null,
+      engine,
     });
     return successResponse(res, result, 201);
   } catch (error) {

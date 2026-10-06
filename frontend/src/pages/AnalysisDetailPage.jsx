@@ -10,8 +10,11 @@ import {
   CheckCircle2,
   AlertTriangle,
   ArrowRight,
-  ShieldCheck,
+  ShieldAlert,
   Users,
+  MapPin,
+  AlertCircle,
+  Info,
 } from 'lucide-react';
 
 export default function AnalysisDetailPage() {
@@ -57,8 +60,13 @@ export default function AnalysisDetailPage() {
     );
   }
 
+  const findingsList = analysis.findings || analysis.incidents || [];
+  const highRiskCount = findingsList.filter(
+    (f) => f.severity === 'critical' || f.severity === 'high'
+  ).length;
+
   return (
-    <div className="space-y-6 max-w-6xl">
+    <div className="space-y-6 max-w-7xl mx-auto">
       {/* Top Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div className="flex items-center gap-3">
@@ -71,7 +79,7 @@ export default function AnalysisDetailPage() {
           <div>
             <div className="flex items-center gap-2">
               <span className="font-mono text-xs text-slate-500">AUDIT RECORD</span>
-              <span className="font-mono text-xs font-bold text-slate-900">#{analysis.id.substring(0, 8)}</span>
+              <span className="font-mono text-xs font-bold text-slate-900">{analysis.display_id || analysis.id.substring(0, 8)}</span>
               <SeverityBadge severity={analysis.overall_risk} />
             </div>
             <h1 className="text-xl font-bold tracking-tight text-slate-900 mt-1">
@@ -86,80 +94,103 @@ export default function AnalysisDetailPage() {
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded hover:bg-slate-50 transition-colors"
           >
             <FileText className="w-3.5 h-3.5" />
-            <span>Export Inspection Report</span>
+            <span>Generate Audit Report</span>
           </Link>
         </div>
       </div>
 
-      {/* Main Content Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column: Visual Media & Chronological Events */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Media Player / Image Viewer */}
+      {/* Split-Screen Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        {/* LEFT: SOURCE MEDIA VISUAL CENTER */}
+        <div className="space-y-4">
           <div className="bg-white border border-slate-200 rounded p-4">
             <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-slate-700 border-b border-slate-100 pb-2 mb-3">
-              <div className="flex items-center gap-1.5">
-                <Camera className="w-4 h-4 text-slate-500" />
-                <span>Ingested Workplace Media</span>
-              </div>
-              <span className="font-mono text-[10px] text-slate-400 uppercase">
+              <span>Source Workplace Media</span>
+              <span className="font-mono text-[10px] text-slate-500 uppercase">
                 {analysis.mime_type}
               </span>
             </div>
 
-            <div className="rounded border border-slate-200 overflow-hidden bg-slate-950 max-h-96 flex items-center justify-center">
+            <div className="rounded border border-slate-300 overflow-hidden bg-slate-950 flex items-center justify-center min-h-[340px]">
               {analysis.media_type === 'video' ? (
                 <video
                   src={analysis.file_path}
                   controls
-                  className="w-full max-h-96 object-contain"
-                >
-                  Your browser does not support HTML5 video preview.
-                </video>
+                  className="w-full max-h-[460px] object-contain"
+                />
               ) : (
                 <img
                   src={analysis.file_path}
                   alt={analysis.file_name}
-                  className="w-full h-auto object-contain max-h-96"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                  }}
+                  className="w-full h-auto max-h-[460px] object-contain"
                 />
               )}
             </div>
 
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500">
-              <div><strong>Size:</strong> {(analysis.file_size / 1024 / 1024).toFixed(2)} MB</div>
-              <div><strong>Audit Timestamp:</strong> {new Date(analysis.created_at).toLocaleString()}</div>
+            {/* Source Metadata */}
+            <div className="mt-4 pt-3 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+              <div>
+                <span className="text-[11px] font-mono uppercase text-slate-400 block">Analysis ID</span>
+                <span className="font-mono font-bold text-slate-900 mt-0.5 block">{analysis.display_id || analysis.id.substring(0, 8)}</span>
+              </div>
+              <div>
+                <span className="text-[11px] font-mono uppercase text-slate-400 block">File Name</span>
+                <span className="font-medium text-slate-900 truncate mt-0.5 block" title={analysis.file_name}>
+                  {analysis.file_name}
+                </span>
+              </div>
+              <div>
+                <span className="text-[11px] font-mono uppercase text-slate-400 block">Analysis Engine</span>
+                <span className={`inline-flex items-center gap-1 mt-0.5 px-2 py-0.5 rounded text-[11px] font-mono font-bold ${
+                  analysis.analysis_engine === 'Gemini Vision'
+                    ? 'bg-orange-50 text-orange-800 border border-orange-200'
+                    : 'bg-slate-100 text-slate-700 border border-slate-200'
+                }`}>
+                  {analysis.analysis_engine || 'Gemini Vision'}
+                </span>
+              </div>
+              <div>
+                <span className="text-[11px] font-mono uppercase text-slate-400 block">Timestamp</span>
+                <span className="font-mono text-slate-600 text-[11px] mt-0.5 block">
+                  {new Date(analysis.created_at).toLocaleString()}
+                </span>
+              </div>
+              <div>
+                <span className="text-[11px] font-mono uppercase text-slate-400 block">File Size</span>
+                <span className="font-mono text-slate-700 mt-0.5 block">
+                  {(analysis.file_size / 1024 / 1024).toFixed(2)} MB
+                </span>
+              </div>
+              <div>
+                <span className="text-[11px] font-mono uppercase text-slate-400 block">Format</span>
+                <span className="font-mono text-slate-700 uppercase mt-0.5 block">
+                  {analysis.media_type}
+                </span>
+              </div>
             </div>
           </div>
 
           {/* Chronological Detection Events */}
-          <div className="bg-white border border-slate-200 rounded p-5">
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-700 border-b border-slate-100 pb-2 mb-4">
+          <div className="bg-white border border-slate-200 rounded p-4">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-700 border-b border-slate-100 pb-2 mb-3">
               <History className="w-4 h-4 text-slate-500" />
-              <span>Chronological Detection Timeline</span>
+              <span>Detection Event Timeline</span>
             </div>
 
             {(!analysis.timeline_events || analysis.timeline_events.length === 0) ? (
-              <p className="text-xs text-slate-500 text-center py-4">
-                No distinct timeline events logged for this scan.
+              <p className="text-xs text-slate-500 py-3 text-center">
+                No distinct timeline intervals recorded.
               </p>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {analysis.timeline_events.map((ev, index) => (
-                  <div key={ev.id || index} className="flex items-start gap-3">
+                  <div key={ev.id || index} className="flex items-start gap-2.5 text-xs">
                     <span className="font-mono text-[11px] text-slate-600 bg-slate-100 px-2 py-0.5 rounded shrink-0">
                       {ev.event_time || '00:00'}
                     </span>
                     <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold text-slate-900">{ev.event_type}</span>
-                        {ev.severity === 'critical' && (
-                          <span className="w-2 h-2 rounded-full bg-red-600" />
-                        )}
-                      </div>
-                      <p className="text-xs text-slate-600 mt-0.5">{ev.description}</p>
+                      <span className="font-semibold text-slate-900">{ev.event_type}</span>
+                      <p className="text-slate-600 mt-0.5">{ev.description}</p>
                     </div>
                   </div>
                 ))}
@@ -168,82 +199,163 @@ export default function AnalysisDetailPage() {
           </div>
         </div>
 
-        {/* Right Column: AI Scene Findings & Created Incidents */}
-        <div className="space-y-6">
-          {/* Executive Scene Summary */}
-          <div className="bg-white border border-slate-200 rounded p-4 space-y-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700 border-b border-slate-100 pb-2">
-              Scene Assessment
-            </h3>
-
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-slate-500">Personnel Detected:</span>
-              <span className="font-mono font-bold text-slate-900">{analysis.persons_detected}</span>
-            </div>
-
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-slate-500">Overall Sector Risk:</span>
-              <SeverityBadge severity={analysis.overall_risk} />
-            </div>
-
-            <div>
-              <span className="text-[11px] font-mono uppercase text-slate-400 font-bold block mb-1">
-                Visual Context
+        {/* RIGHT: FINDINGS & EVIDENCE */}
+        <div className="space-y-4">
+          {/* Summary Indicators */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-white border border-slate-200 rounded p-3">
+            <div className="p-2.5 rounded bg-slate-50 border border-slate-100 text-center">
+              <span className="text-[10px] font-mono uppercase text-slate-500 block">People Detected</span>
+              <span className="text-lg font-bold font-mono text-slate-900 mt-0.5 block">
+                {analysis.persons_detected}
               </span>
-              <p className="text-xs text-slate-700 leading-relaxed bg-slate-50 p-2.5 rounded border border-slate-200">
-                {analysis.scene_summary}
-              </p>
             </div>
-
-            {analysis.recommended_actions && analysis.recommended_actions.length > 0 && (
-              <div>
-                <span className="text-[11px] font-mono uppercase text-slate-400 font-bold block mb-1">
-                  Safety Protocol Directives
-                </span>
-                <ul className="text-xs text-slate-700 space-y-1.5 list-disc list-inside">
-                  {analysis.recommended_actions.map((act, i) => (
-                    <li key={i}>{act}</li>
-                  ))}
-                </ul>
+            <div className="p-2.5 rounded bg-slate-50 border border-slate-100 text-center">
+              <span className="text-[10px] font-mono uppercase text-slate-500 block">Findings Detected</span>
+              <span className="text-lg font-bold font-mono text-slate-900 mt-0.5 block">
+                {findingsList.length}
+              </span>
+            </div>
+            <div className="p-2.5 rounded bg-slate-50 border border-slate-100 text-center">
+              <span className="text-[10px] font-mono uppercase text-slate-500 block">High-Risk Items</span>
+              <span className="text-lg font-bold font-mono text-red-600 mt-0.5 block">
+                {highRiskCount}
+              </span>
+            </div>
+            <div className="p-2.5 rounded bg-slate-50 border border-slate-100 text-center">
+              <span className="text-[10px] font-mono uppercase text-slate-500 block">Overall Risk</span>
+              <div className="mt-1">
+                <SeverityBadge severity={analysis.overall_risk} />
               </div>
-            )}
+            </div>
           </div>
 
-          {/* Generated Incidents */}
+          {/* Scene Summary */}
           <div className="bg-white border border-slate-200 rounded p-4">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700 border-b border-slate-100 pb-2 mb-3">
-              Generated Incidents ({analysis.incidents?.length || 0})
+            <span className="text-[11px] font-mono uppercase text-slate-500 font-bold block mb-1">
+              Scene Summary Narrative
+            </span>
+            <p className="text-xs text-slate-700 leading-relaxed bg-slate-50 p-2.5 rounded border border-slate-200">
+              {analysis.scene_summary}
+            </p>
+          </div>
+
+          {/* Evidence Cards */}
+          <div className="space-y-3">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700">
+              Visual Evidence Findings ({findingsList.length})
             </h3>
 
-            {(!analysis.incidents || analysis.incidents.length === 0) ? (
-              <p className="text-xs text-slate-500 text-center py-4">
-                No compliance incidents logged. Area verified clear.
-              </p>
+            {findingsList.length === 0 ? (
+              <div className="p-6 bg-white border border-slate-200 rounded text-center text-xs text-slate-500">
+                No safety violations detected. Visual scene confirmed compliant.
+              </div>
             ) : (
-              <div className="space-y-3">
-                {analysis.incidents.map((inc) => (
-                  <div key={inc.id} className="p-3 rounded bg-slate-50 border border-slate-200 space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold text-xs text-slate-900 capitalize font-mono">
-                        {inc.type.replace(/_/g, ' ')}
+              findingsList.map((item, idx) => (
+                <div
+                  key={item.id || idx}
+                  className="bg-white border border-slate-200 rounded p-4 space-y-3"
+                >
+                  <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-2.5">
+                    <div>
+                      <span className="font-mono text-xs font-bold uppercase tracking-wider text-slate-900 block">
+                        {item.type?.replace(/_/g, ' ')}
                       </span>
-                      <StatusBadge status={inc.status} />
+                      <span className="text-[11px] font-mono text-slate-500">
+                        Confidence: <strong>{Math.round((item.confidence || 0) * 100)}%</strong>
+                      </span>
                     </div>
-                    <SeverityBadge severity={inc.severity} />
-                    <p className="text-xs text-slate-600 line-clamp-2">{inc.description}</p>
-                    <div className="pt-1 flex justify-end">
-                      <Link
-                        to={`/incidents/${inc.id}`}
-                        className="text-xs font-medium text-orange-600 hover:text-orange-700 inline-flex items-center gap-1"
-                      >
-                        <span>Investigate Dossier</span>
-                        <ArrowRight className="w-3 h-3" />
-                      </Link>
+                    <SeverityBadge severity={item.severity} />
+                  </div>
+
+                  <div className="bg-slate-50 p-2.5 rounded border border-slate-200 space-y-1">
+                    <span className="text-[10px] font-mono uppercase font-bold text-slate-500 block">
+                      Visual Evidence
+                    </span>
+                    <p className="text-xs text-slate-800 font-medium leading-relaxed">
+                      {item.visual_evidence || item.description}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <span className="text-[10px] font-mono uppercase text-slate-400 block font-semibold">Location</span>
+                      <span className="text-slate-700 flex items-center gap-1 mt-0.5">
+                        <MapPin className="w-3 h-3 text-orange-600 shrink-0" />
+                        <span>{item.location || 'Monitored sector'}</span>
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-mono uppercase text-slate-400 block font-semibold">Explanation</span>
+                      <span className="text-slate-700 mt-0.5 block">
+                        {item.explanation || 'Protocol non-compliance in monitored workspace.'}
+                      </span>
                     </div>
                   </div>
-                ))}
-              </div>
+
+                  <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="text-xs">
+                      <span className="text-[10px] font-mono uppercase text-amber-800 font-bold block">
+                        Recommended Action:
+                      </span>
+                      <span className="text-slate-800 font-medium">
+                        {item.recommended_action}
+                      </span>
+                    </div>
+                    {item.id && (
+                      <Link
+                        to={`/incidents/${item.id}`}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-slate-900 hover:text-white hover:bg-slate-900 bg-slate-100 rounded border border-slate-200 transition-colors shrink-0"
+                      >
+                        <span>Investigate</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              ))
             )}
+          </div>
+        </div>
+      </div>
+
+      {/* Risk Reasoning Section (Below Split-Screen) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white border border-slate-200 rounded p-6">
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+            <AlertCircle className="w-4 h-4 text-orange-600" />
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+              Why This Was Flagged
+            </h4>
+          </div>
+          {analysis.why_flagged && analysis.why_flagged.length > 0 ? (
+            <ul className="space-y-2 text-xs text-slate-700">
+              {analysis.why_flagged.map((reason, rIdx) => (
+                <li key={rIdx} className="flex items-start gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-orange-600 mt-1.5 shrink-0" />
+                  <span>{reason}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-xs text-slate-500">
+              Visual conditions observed within expected parameters.
+            </p>
+          )}
+        </div>
+
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+            <ShieldAlert className="w-4 h-4 text-red-600" />
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+              Risk Assessment
+            </h4>
+          </div>
+          <p className="text-xs text-slate-700 leading-relaxed bg-slate-50 p-3 rounded border border-slate-200 font-sans">
+            {analysis.risk_assessment || 'Visual findings warrant ongoing compliance observation.'}
+          </p>
+          <div className="text-[11px] text-slate-500 flex items-center gap-1.5">
+            <Info className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+            <span>Decision-support assessment based on visible factors. Does not assert certainty beyond optical observations.</span>
           </div>
         </div>
       </div>

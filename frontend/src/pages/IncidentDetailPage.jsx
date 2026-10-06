@@ -14,6 +14,8 @@ import {
   Send,
   Camera,
   History,
+  AlertCircle,
+  Info,
 } from 'lucide-react';
 
 export default function IncidentDetailPage() {
@@ -22,7 +24,6 @@ export default function IncidentDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Status update state
   const [status, setStatus] = useState('open');
   const [resolutionNotes, setResolutionNotes] = useState('');
   const [savingStatus, setSavingStatus] = useState(false);
@@ -91,8 +92,8 @@ export default function IncidentDetailPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-6xl">
-      {/* Navigation & Actions Top Bar */}
+    <div className="space-y-6 max-w-6xl mx-auto">
+      {/* Top Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div className="flex items-center gap-3">
           <Link
@@ -105,7 +106,7 @@ export default function IncidentDetailPage() {
           <div>
             <div className="flex items-center gap-2">
               <span className="font-mono text-xs text-slate-500">INCIDENT DOSSIER</span>
-              <span className="font-mono text-xs font-bold text-slate-900">#{incident.id.substring(0, 8)}</span>
+              <span className="font-mono text-xs font-bold text-slate-900">{incident.display_id || incident.id.substring(0, 8)}</span>
               <StatusBadge status={incident.status} />
               <SeverityBadge severity={incident.severity} />
             </div>
@@ -121,7 +122,7 @@ export default function IncidentDetailPage() {
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded hover:bg-slate-50 transition-colors"
           >
             <FileText className="w-3.5 h-3.5" />
-            <span>Generate PDF Audit Report</span>
+            <span>Generate Audit Report</span>
           </Link>
         </div>
       </div>
@@ -135,13 +136,17 @@ export default function IncidentDetailPage() {
 
       {/* Main Grid: Left investigation answers, Right media & status update */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column: The 7 Core Operational Intelligence Questions */}
+        {/* Left Column: Visual Findings & Evidence */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Executive Visual Assessment Card */}
           <div className="bg-white border border-slate-200 rounded p-5 space-y-4">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-500 border-b border-slate-100 pb-2">
-              Visual Incident Analysis
-            </h2>
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-700">
+                Visual Finding &amp; Evidence
+              </h2>
+              <span className="text-[11px] font-mono text-slate-400">
+                Confidence: {Math.round((incident.confidence || 0) * 100)}%
+              </span>
+            </div>
 
             {/* WHAT happened */}
             <div>
@@ -153,49 +158,49 @@ export default function IncidentDetailPage() {
               </p>
             </div>
 
-            {/* WHERE did it happen */}
-            <div>
-              <span className="text-[11px] font-mono uppercase text-slate-400 font-bold block">
-                WHERE did it happen?
+            {/* Visual Evidence Section */}
+            <div className="bg-slate-50 p-3 rounded border border-slate-200 space-y-1">
+              <span className="text-[10px] font-mono uppercase font-bold text-slate-500 block">
+                Visual Evidence
               </span>
-              <div className="flex items-center gap-1.5 text-xs text-slate-700 mt-0.5 font-medium">
-                <MapPin className="w-3.5 h-3.5 text-orange-600 shrink-0" />
-                <span>{incident.location || 'Observed sector within visual frame'}</span>
-              </div>
+              <p className="text-xs text-slate-800 font-medium leading-relaxed">
+                {incident.visual_evidence || incident.description}
+              </p>
             </div>
 
-            {/* WHAT safety issue was detected */}
+            {/* WHERE did it happen */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
               <div>
                 <span className="text-[11px] font-mono uppercase text-slate-400 font-bold block">
-                  Safety Issue Classification
+                  WHERE did it happen?
                 </span>
-                <span className="text-xs font-mono font-semibold text-slate-800 capitalize mt-0.5 block">
-                  {incident.type.replace(/_/g, ' ')}
-                </span>
+                <div className="flex items-center gap-1.5 text-xs text-slate-700 mt-0.5 font-medium">
+                  <MapPin className="w-3.5 h-3.5 text-orange-600 shrink-0" />
+                  <span>{incident.location || 'Monitored sector within visual frame'}</span>
+                </div>
               </div>
 
               <div>
                 <span className="text-[11px] font-mono uppercase text-slate-400 font-bold block">
-                  Optical Confidence Rating
+                  Analysis Engine
                 </span>
-                <span className="text-xs font-mono font-bold text-slate-800 mt-0.5 block">
-                  {Math.round((incident.confidence || 0) * 100)}% Match
+                <span className="font-mono text-xs text-slate-700 mt-0.5 block">
+                  {incident.analysis_engine || 'Gemini Vision'}
                 </span>
               </div>
             </div>
 
-            {/* HOW severe & WHY is it risky */}
+            {/* WHY is it considered risky */}
             <div className="pt-2 border-t border-slate-100">
               <span className="text-[11px] font-mono uppercase text-slate-400 font-bold block">
                 WHY is it considered risky?
               </span>
               <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">
-                {incident.severity === 'critical'
-                  ? 'Presents immediate danger to life or physical impairment (fall, thermal event, high-voltage contact) requiring immediate work halt.'
-                  : incident.severity === 'high'
-                  ? 'Severe non-compliance with OSHA PPE or zone perimeter safeguards capable of causing traumatic injury in active work zones.'
-                  : 'Standard industrial compliance deviation requiring correction before condition deteriorates.'}
+                {incident.explanation || (
+                  incident.severity === 'critical'
+                    ? 'Presents immediate danger to life or physical impairment (fall, thermal event) requiring immediate halt.'
+                    : 'Non-compliance with required safety safeguards capable of causing preventable workplace injury.'
+                )}
               </p>
             </div>
 
@@ -210,7 +215,7 @@ export default function IncidentDetailPage() {
             </div>
           </div>
 
-          {/* Analysis Timeline */}
+          {/* Timeline Events */}
           {incident.timeline_events && incident.timeline_events.length > 0 && (
             <div className="bg-white border border-slate-200 rounded p-5">
               <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-700 border-b border-slate-100 pb-2 mb-4">
@@ -218,20 +223,15 @@ export default function IncidentDetailPage() {
                 <span>Detection Event Timeline</span>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {incident.timeline_events.map((ev, index) => (
-                  <div key={ev.id || index} className="flex items-start gap-3">
+                  <div key={ev.id || index} className="flex items-start gap-3 text-xs">
                     <span className="font-mono text-[11px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded shrink-0">
                       {ev.event_time || '00:00'}
                     </span>
                     <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold text-slate-900">{ev.event_type}</span>
-                        {ev.severity === 'critical' && (
-                          <span className="w-2 h-2 rounded-full bg-red-600" />
-                        )}
-                      </div>
-                      <p className="text-xs text-slate-600 mt-0.5">{ev.description}</p>
+                      <span className="font-semibold text-slate-900">{ev.event_type}</span>
+                      <p className="text-slate-600 mt-0.5">{ev.description}</p>
                     </div>
                   </div>
                 ))}
@@ -240,9 +240,8 @@ export default function IncidentDetailPage() {
           )}
         </div>
 
-        {/* Right Column: Source Media Preview & Status Update Tool */}
+        {/* Right Column: Source Media Preview & Status Management */}
         <div className="space-y-6">
-          {/* Source Media Card */}
           <div className="bg-white border border-slate-200 rounded p-4">
             <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-slate-700 border-b border-slate-100 pb-2 mb-3">
               <div className="flex items-center gap-1.5">
@@ -271,18 +270,19 @@ export default function IncidentDetailPage() {
               )}
             </div>
 
-            <div className="mt-3 text-[11px] text-slate-500">
+            <div className="mt-3 text-[11px] text-slate-500 space-y-0.5">
+              <div><strong className="text-slate-700">Analysis:</strong> {incident.analysis_display_id || incident.analysis_id?.substring(0, 8)}</div>
               <div><strong className="text-slate-700">Filename:</strong> {incident.file_name}</div>
               <div><strong className="text-slate-700">Logged:</strong> {new Date(incident.created_at).toLocaleString()}</div>
               {incident.resolved_at && (
-                <div className="text-emerald-700 mt-1">
+                <div className="text-emerald-700 pt-1">
                   <strong>Resolved at:</strong> {new Date(incident.resolved_at).toLocaleString()}
                 </div>
               )}
             </div>
           </div>
 
-          {/* Incident Status Management Tool */}
+          {/* Incident Status Management */}
           <div className="bg-white border border-slate-200 rounded p-4">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700 border-b border-slate-100 pb-2 mb-3">
               Safety Officer Incident Protocol

@@ -45,7 +45,7 @@ Rather than claiming an unbounded detection scope, VisionGuard AI focuses on hig
 +--------------------------------------------------------------+
 |                    Client Layer (React / Vite)               |
 |  - Enterprise Operations Console (Tailwind CSS, Lucide)      |
-|  - Real-Time Upload & Multi-Stage Processing Visualizer      |
+|  - Asynchronous Upload & Multi-Stage Processing Visualizer   |
 |  - Incident Dossier Investigation & Resolution Workflows     |
 +--------------------------------------------------------------+
                                |
@@ -61,7 +61,7 @@ Rather than claiming an unbounded detection scope, VisionGuard AI focuses on hig
 |  | Services:                                              |  |
 |  |   - Gemini Vision Service (Structured JSON Generation) |  |
 |  |   - Incident Engine (Severity & Confidence Ranking)    |  |
-|  |   - Dashboard Telemetry (Live SQL Aggregations)        |  |
+|  |   - Dashboard Telemetry (Database-driven safety data)  |  |
 |  +--------------------------------------------------------+  |
 +--------------------------------------------------------------+
              |                                    |
@@ -233,7 +233,7 @@ Create `.env` based on `.env.example`:
 5. **Investigate Incident Dossier:** Click **Investigate** to open the incident dossier. Highlight the 7 core questions answered: What happened, Where it happened, Classification, Confidence, Severity, Why it is risky, and What to do next.
 6. **Incident Resolution Protocol:** Change the incident status from `Open` to `Acknowledged`, then to `Resolved` with resolution notes (e.g., "Hard hat issued to worker in Bay 2, compliance re-verified").
 7. **Verify Dashboard Update:** Return to **Overview**. Show that the real counts dynamically incremented resolved incidents and decremented open incidents.
-8. **Generate Compliance Report:** Navigate to **Reports**, select the incident, and demonstrate the formal printable OSHA audit dossier with sign-off blocks.
+8. **Generate Compliance Report:** Navigate to **Reports**, select the incident, and demonstrate the formal printable AI-assisted safety audit report with sign-off blocks.
 
 ---
 
