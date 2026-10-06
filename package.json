@@ -1,0 +1,21 @@
+{
+  "name": "visionguard-ai",
+  "version": "1.0.0",
+  "description": "Autonomous Industrial Safety & Incident Intelligence",
+  "scripts": {
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build:frontend": "cd frontend && npm run build",
+    "start:backend": "cd backend && npm start",
+    "test:backend": "cd backend && npm test"
+  },
+  "keywords": [
+    "computer-vision",
+    "industrial-safety",
+    "incident-intelligence",
+    "gemini-vision",
+    "ppe-detection"
+  ],
+  "author": "VisionGuard AI Engineering Team",
+  "license": "UNLICENSED"
+}
