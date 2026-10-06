@@ -61,6 +61,20 @@ export default function AnalyzePage() {
     }
   };
 
+  const handleLoadSamplePhoto = async (url, filename) => {
+    try {
+      setError(null);
+      setAnalysisResult(null);
+      setEngineMode('gemini');
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const file = new File([blob], filename, { type: 'image/jpeg' });
+      processFileSelection(file);
+    } catch (e) {
+      setError(`Failed to load sample workplace media: ${e.message}`);
+    }
+  };
+
   const handlePresetSelect = (presetName, filename, targetEngine = 'demo_baseline') => {
     setError(null);
     setAnalysisResult(null);
@@ -319,6 +333,19 @@ export default function AnalyzePage() {
             </p>
 
             <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => handleLoadSamplePhoto('/samples/construction_ppe_hazard.jpg', 'construction_ppe_hazard.jpg')}
+                disabled={analyzing}
+                className="w-full text-left p-2.5 rounded bg-orange-50 hover:bg-orange-100/80 border border-orange-200 transition-colors text-xs"
+              >
+                <div className="font-semibold text-slate-900 flex items-center justify-between">
+                  <span>Live Photo: Steel Erection PPE Violation</span>
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-orange-600 text-white font-bold">GEMINI</span>
+                </div>
+                <div className="text-[11px] text-slate-600 mt-0.5">High-res workplace photo with real personnel without helmet/vest</div>
+              </button>
+
               <button
                 type="button"
                 onClick={() => handlePresetSelect('Scaffold PPE Compliance', 'sample_ppe_violation.png', 'demo_baseline')}

@@ -62,6 +62,8 @@ app.get('/api/health', (req, res) => {
     service: 'VisionGuard AI Incident Intelligence API',
     database_type: db.getDbType(),
     environment: config.nodeEnv,
+    gemini_configured: Boolean(config.geminiApiKey),
+    gemini_model: config.geminiModel,
     timestamp: new Date().toISOString(),
   });
 });
@@ -93,6 +95,7 @@ const startServer = async () => {
     app.listen(config.port, () => {
       logger.info(`VisionGuard API server listening on http://localhost:${config.port}`);
       logger.info(`Database mode active: ${db.getDbType()}`);
+      logger.info(`Gemini AI Engine: ${config.geminiApiKey ? `READY (${config.geminiModel})` : 'NOT CONFIGURED'}`);
     });
   } catch (err) {
     logger.error('Failed to start server:', { error: err.message, stack: err.stack });
