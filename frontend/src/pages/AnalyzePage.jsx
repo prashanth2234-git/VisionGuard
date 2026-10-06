@@ -1,6 +1,6 @@
-import React, { useState, useRef } from 'react';
-import { Link } from 'react-router-dom';
-import { api } from '../services/api';
+import React, { useState, useRef, useEffect } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { api, getMediaUrl } from '../services/api';
 import { SeverityBadge, StatusBadge } from '../components/StatusBadge';
 import {
   Upload,
@@ -22,6 +22,8 @@ import {
 
 export default function AnalyzePage() {
   const fileInputRef = useRef(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlAnalysisId = searchParams.get('id');
 
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -30,6 +32,35 @@ export default function AnalyzePage() {
   const [loadingStage, setLoadingStage] = useState('');
   const [error, setError] = useState(null);
   const [analysisResult, setAnalysisResult] = useState(null);
+
+  // Synchronize and restore analysis on page refresh or navigation
+  useEffect(() => {
+    if (urlAnalysisId && !analysisResult) {
+      let isMounted = true;
+      setAnalyzing(true);
+      setLoadingStage('Loading saved inspection record...');
+      api.getAnalysisById(urlAnalysisId)
+        .then((res) => {
+          if (isMounted && res.success && res.data) {
+            setAnalysisResult(res.data);
+          }
+        })
+        .catch((err) => {
+          if (isMounted) {
+            console.error('Failed to restore analysis by ID:', err);
+          }
+        })
+        .finally(() => {
+          if (isMounted) {
+            setAnalyzing(false);
+            setLoadingStage('');
+          }
+        });
+      return () => {
+        isMounted = false;
+      };
+    }
+  }, [urlAnalysisId]);
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
@@ -65,6 +96,7 @@ export default function AnalyzePage() {
     try {
       setError(null);
       setAnalysisResult(null);
+      setSearchParams({});
       setEngineMode('gemini');
       const res = await fetch(url);
       const blob = await res.blob();
@@ -78,6 +110,7 @@ export default function AnalyzePage() {
   const handlePresetSelect = (presetName, filename, targetEngine = 'demo_baseline') => {
     setError(null);
     setAnalysisResult(null);
+    setSearchParams({});
     setEngineMode(targetEngine);
 
     const canvas = document.createElement('canvas');
@@ -149,6 +182,9 @@ export default function AnalyzePage() {
 
       if (response?.success && response?.data) {
         setAnalysisResult(response.data);
+        if (response.data.id) {
+          setSearchParams({ id: response.data.id });
+        }
       } else {
         throw new Error(response?.error?.message || 'Visual analysis failed to complete.');
       }
@@ -165,6 +201,7 @@ export default function AnalyzePage() {
     setPreviewUrl(null);
     setAnalysisResult(null);
     setError(null);
+    setSearchParams({});
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -442,15 +479,20 @@ export default function AnalyzePage() {
                 <div className="rounded border border-slate-300 overflow-hidden bg-slate-950 flex items-center justify-center min-h-[340px]">
                   {analysisResult.media_type === 'video' ? (
                     <video
-                      src={analysisResult.file_path}
+                      src={getMediaUrl(analysisResult.file_path) || previewUrl}
                       controls
                       className="w-full max-h-[460px] object-contain"
                     />
                   ) : (
                     <img
-                      src={analysisResult.file_path}
+                      src={getMediaUrl(analysisResult.file_path) || previewUrl}
                       alt={analysisResult.file_name}
                       className="w-full h-auto max-h-[460px] object-contain"
+                      onError={(e) => {
+                        if (previewUrl && e.currentTarget.src !== previewUrl) {
+                          e.currentTarget.src = previewUrl;
+                        }
+                      }}
                     />
                   )}
                 </div>
@@ -490,8 +532,8 @@ export default function AnalyzePage() {
                     </span>
                   </div>
                   <div>
-                    <span className="text-[11px] font-mono uppercase text-slate-400 block">Safety Protocol</span>
-                    <span className="font-medium text-slate-700 mt-0.5 block">Standard OSHA 1926</span>
+                    <span className="text-[11px] font-mono uppercase text-slate-400 block">Reference Framework</span>
+                    <span className="font-medium text-slate-700 mt-0.5 block">Industrial Safety</span>
                   </div>
                 </div>
               </div>

@@ -86,7 +86,7 @@ export default function LandingPage() {
               Targeted Industrial Safety Hazard Models
             </p>
             <p className="mt-3 text-xs sm:text-sm text-slate-400">
-              Rather than generic detection, VisionGuard focuses on concrete workplace risks that cause severe accidents and OSHA citations.
+              Rather than generic detection, VisionGuard focuses on concrete workplace risks that cause severe accidents and preventable injuries.
             </p>
           </div>
 

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { api } from '../services/api';
+import { api, getMediaUrl } from '../services/api';
 import { SeverityBadge, StatusBadge } from '../components/StatusBadge';
 import {
   ShieldAlert,
@@ -256,7 +256,7 @@ export default function IncidentDetailPage() {
             <div className="rounded border border-slate-200 overflow-hidden bg-slate-950 max-h-56 flex items-center justify-center">
               {incident.file_path ? (
                 <img
-                  src={incident.file_path}
+                  src={getMediaUrl(incident.file_path)}
                   alt="Workplace source frame"
                   className="w-full h-auto object-contain max-h-56"
                   onError={(e) => {

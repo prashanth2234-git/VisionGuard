@@ -61,4 +61,29 @@ export const api = {
 
   // Health
   getHealth: () => apiRequest('/api/health'),
+
+  // Media
+  getMediaUrl,
 };
+
+/**
+ * Safely resolves a media file path (such as /uploads/...) to a valid URL
+ * supporting local Vite proxy (/uploads/...) and external API bases (https://.../uploads/...).
+ */
+export function getMediaUrl(filePath) {
+  if (!filePath) return '';
+  if (
+    filePath.startsWith('http://') ||
+    filePath.startsWith('https://') ||
+    filePath.startsWith('blob:') ||
+    filePath.startsWith('data:')
+  ) {
+    return filePath;
+  }
+  const cleanPath = filePath.startsWith('/') ? filePath : `/${filePath}`;
+  if (API_BASE_URL) {
+    const trimmedBase = API_BASE_URL.replace(/\/+$/, '');
+    return `${trimmedBase}${cleanPath}`;
+  }
+  return cleanPath;
+}

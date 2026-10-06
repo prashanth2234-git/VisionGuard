@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { api } from '../services/api';
+import { api, getMediaUrl } from '../services/api';
 import { SeverityBadge, StatusBadge } from '../components/StatusBadge';
 import {
   ArrowLeft,
@@ -114,13 +114,13 @@ export default function AnalysisDetailPage() {
             <div className="rounded border border-slate-300 overflow-hidden bg-slate-950 flex items-center justify-center min-h-[340px]">
               {analysis.media_type === 'video' ? (
                 <video
-                  src={analysis.file_path}
+                  src={getMediaUrl(analysis.file_path)}
                   controls
                   className="w-full max-h-[460px] object-contain"
                 />
               ) : (
                 <img
-                  src={analysis.file_path}
+                  src={getMediaUrl(analysis.file_path)}
                   alt={analysis.file_name}
                   className="w-full h-auto max-h-[460px] object-contain"
                 />
